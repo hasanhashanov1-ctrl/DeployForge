@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11100e" />
+    <meta
+      name="description"
+      content="DeployForge — локальная панель управления Docker-деплоями из GitHub."
+    />
+    <title>DeployForge — панель деплоя</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="DeployForge, главная">
+        <span class="brand-mark">DF</span>
+        <span>
+          <strong>DeployForge</strong>
+          <small>LOCAL DEPLOYMENT CONTROL</small>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <span class="health-pill" id="health-pill">
+          <span class="health-dot"></span>
+          <span id="health-label">Проверяем систему</span>
+        </span>
+        <a class="text-link" href="/docs" target="_blank" rel="noreferrer">API / Swagger ↗</a>
+        <button class="button button-primary button-compact" id="new-project-button" type="button">
+          <span aria-hidden="true">＋</span> Новый проект
+        </button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">DEPLOYMENT WORKSPACE</p>
+          <h1 id="page-title">Код — внутрь.<br /><span>Рабочий сервис — наружу.</span></h1>
+          <p class="intro-copy">
+            Подключай публичный GitHub-репозиторий с Dockerfile, запускай сборку и следи
+            за каждым этапом в одном месте.
+          </p>
+        </div>
+        <div class="overview" aria-label="Сводка">
+          <div class="metric">
+            <span class="metric-value" id="metric-projects">—</span>
+            <span class="metric-label">проектов</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value accent" id="metric-running">—</span>
+            <span class="metric-label">запущено</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value warning" id="metric-attention">—</span>
+            <span class="metric-label">требуют внимания</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Рабочая область DeployForge">
+        <aside class="project-rail">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">PROJECTS</p>
+              <h2>Твои сервисы</h2>
+            </div>
+            <button class="icon-button" id="refresh-projects" type="button" aria-label="Обновить проекты">
+              ↻
+            </button>
+          </div>
+          <div class="project-list" id="project-list" aria-live="polite">
+            <div class="project-skeleton"></div>
+            <div class="project-skeleton"></div>
+          </div>
+        </aside>
+
+        <section class="detail-panel" id="detail-panel" aria-live="polite">
+          <div class="empty-state" id="empty-state">
+            <span class="empty-glyph" aria-hidden="true">⌁</span>
+            <p class="eyebrow">READY WHEN YOU ARE</p>
+            <h2>Добавь первый репозиторий</h2>
+            <p>
+              Укажи GitHub-ссылку, путь к Dockerfile и порт контейнера. DeployForge
+              соберёт остальное.
+            </p>
+            <button class="button button-primary" id="empty-create-button" type="button">
+              Создать проект
+            </button>
+          </div>
+
+          <div class="project-detail hidden" id="project-detail">
+            <div class="project-header">
+              <div class="project-identity">
+                <div class="project-monogram" id="project-monogram">DF</div>
+                <div>
+                  <div class="title-line">
+                    <h2 id="project-name">Проект</h2>
+                    <span class="status-badge" id="project-status">Нет деплоев</span>
+                  </div>
+                  <a id="project-repo" class="repo-link" href="#" target="_blank" rel="noreferrer"></a>
+                </div>
+              </div>
+              <div class="project-actions">
+                <a class="button button-ghost hidden" id="open-app-button" href="#" target="_blank" rel="noreferrer">
+                  Открыть сервис ↗
+                </a>
+                <button class="button button-ghost hidden" id="lifecycle-button" type="button">
+                  ■ Остановить
+                </button>
+                <button class="button button-cancel hidden" id="cancel-deployment-button" type="button">
+                  × Отменить деплой
+                </button>
+                <button class="button button-primary" id="deploy-button" type="button">
+                  <span class="deploy-icon" aria-hidden="true">▲</span> Запустить деплой
+                </button>
+                <button class="icon-button danger" id="delete-project-button" type="button" aria-label="Удалить проект">
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div class="project-meta" id="project-meta"></div>
+
+            <div class="activity-strip hidden" id="activity-strip">
+              <div class="activity-spinner" aria-hidden="true"></div>
+              <div>
+                <strong id="activity-title">Выполняется деплой</strong>
+                <span id="activity-copy">Worker готовит новую версию приложения.</span>
+              </div>
+              <span class="activity-time" id="activity-time"></span>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="Информация о проекте">
+              <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="deployments">
+                История деплоев
+              </button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="logs">
+                Логи
+              </button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="settings">
+                Настройки
+              </button>
+            </div>
+
+            <div class="tab-panel" id="deployments-panel" role="tabpanel">
+              <div class="deployment-list" id="deployment-list"></div>
+            </div>
+
+            <div class="tab-panel hidden" id="logs-panel" role="tabpanel">
+              <div class="log-toolbar">
+                <div class="segmented" aria-label="Тип логов">
+                  <button class="segment active" type="button" data-log="build">Сборка</button>
+                  <button class="segment" type="button" data-log="runtime">Приложение</button>
+                </div>
+                <div class="log-actions">
+                  <span class="live-log-status idle" id="live-log-status">
+                    <span class="live-log-dot" aria-hidden="true"></span>
+                    <span id="live-log-label">Ожидание</span>
+                  </span>
+                  <label>
+                    <span class="sr-only">Количество строк</span>
+                    <select id="log-tail">
+                      <option value="100">100 строк</option>
+                      <option value="300">300 строк</option>
+                      <option value="500" selected>500 строк</option>
+                      <option value="1000">1000 строк</option>
+                    </select>
+                  </label>
+                  <button class="button button-ghost button-small" id="refresh-logs" type="button">Обновить</button>
+                </div>
+              </div>
+              <div class="log-context" id="log-context">Выбери деплой в истории, чтобы посмотреть его журнал.</div>
+              <pre class="log-viewer" id="log-viewer"><code>Логи пока не выбраны.</code></pre>
+            </div>
+
+            <div class="tab-panel hidden" id="settings-panel" role="tabpanel">
+              <div class="environment-heading settings-heading">
+                <div>
+                  <p class="eyebrow">PROJECT CONFIGURATION</p>
+                  <h3>Настройки проекта</h3>
+                  <p>Изменения репозитория и сборки применятся при следующем деплое.</p>
+                </div>
+                <button class="button button-ghost button-small" id="edit-project-button" type="button">Редактировать</button>
+              </div>
+              <div class="settings-grid" id="settings-grid"></div>
+              <section class="environment-section" aria-labelledby="environment-title">
+                <div class="environment-heading">
+                  <div>
+                    <p class="eyebrow">RUNTIME ENVIRONMENT</p>
+                    <h3 id="environment-title">Переменные окружения</h3>
+                    <p>Значения попадут только в новую версию контейнера после следующего деплоя.</p>
+                  </div>
+                  <button class="button button-ghost button-small" id="add-variable" type="button">＋ Добавить</button>
+                </div>
+                <div class="environment-labels" aria-hidden="true">
+                  <span>Ключ</span><span>Значение</span><span>Секрет</span><span></span>
+                </div>
+                <div class="environment-list" id="environment-list"></div>
+                <div class="environment-footer">
+                  <p><span aria-hidden="true">◇</span> Секреты зашифрованы в базе и после сохранения отображаются пустыми.</p>
+                  <button class="button button-primary button-small" id="save-variables" type="button">Сохранить переменные</button>
+                </div>
+              </section>
+              <div class="danger-zone">
+                <div>
+                  <strong>Удаление проекта</strong>
+                  <p>Контейнеры и локальные образы проекта будут удалены фоновой задачей.</p>
+                </div>
+                <button class="button button-danger" id="delete-project-secondary" type="button">Удалить проект</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <dialog class="modal" id="project-modal" aria-labelledby="modal-title">
+      <form method="dialog" id="project-form">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow" id="modal-eyebrow">NEW PROJECT</p>
+            <h2 id="modal-title">Подключить репозиторий</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-modal aria-label="Закрыть">×</button>
+        </div>
+        <p class="modal-copy" id="modal-copy">DeployForge поддерживает доверенные публичные GitHub-репозитории с Dockerfile.</p>
+
+        <div class="form-grid">
+          <label class="field field-wide">
+            <span>Название проекта</span>
+            <input name="name" required maxlength="120" placeholder="Например, Billing API" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Slug</span>
+            <input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="billing-api" autocomplete="off" />
+            <small id="slug-help">Станет адресом: slug.localhost</small>
+          </label>
+          <label class="field">
+            <span>Порт контейнера</span>
+            <input name="container_port" required type="number" min="1" max="65535" placeholder="8080" />
+            <small id="port-help">Порт, который слушает приложение внутри контейнера</small>
+          </label>
+          <label class="field field-wide">
+            <span>GitHub HTTPS URL</span>
+            <input name="repo_url" required type="url" placeholder="https://github.com/user/repository" autocomplete="url" />
+          </label>
+          <label class="field">
+            <span>Ветка <em>необязательно</em></span>
+            <input name="branch" placeholder="main" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Путь к Dockerfile</span>
+            <input name="dockerfile_path" value="Dockerfile" required autocomplete="off" />
+          </label>
+        </div>
+
+        <div class="form-error hidden" id="form-error" role="alert"></div>
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-modal>Отмена</button>
+          <button class="button button-primary" id="create-project-submit" type="submit">Создать проект</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal modal-small" id="delete-modal" aria-labelledby="delete-title">
+      <form method="dialog" id="delete-form">
+        <div class="danger-mark" aria-hidden="true">!</div>
+        <h2 id="delete-title">Удалить проект?</h2>
+        <p>
+          DeployForge остановит и удалит связанные контейнеры и образы. Историю проекта восстановить нельзя.
+        </p>
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-delete>Отмена</button>
+          <button class="button button-danger" id="confirm-delete" type="submit">Да, удалить</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast-region" id="toast-region" aria-live="polite"></div>
+  </body>
+</html>
