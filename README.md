@@ -8,6 +8,7 @@ DeployForge — локальный мини-аналог Render/Heroku для у
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+[![CI](https://github.com/hasanhashanov1-ctrl/DeployForge/actions/workflows/ci.yml/badge.svg)](https://github.com/hasanhashanov1-ctrl/DeployForge/actions/workflows/ci.yml)
 ![Tests](https://img.shields.io/badge/tests-62%20passed-8BC34A)
 
 ![Панель DeployForge](docs/images/dashboard-overview.png)
